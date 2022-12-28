@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Passport\TokenRepository;
 use Laravel\Passport\RefreshTokenRepository;
-
+use App\Http\Controllers\FormularioController;
+use App\Http\Controllers\ProyectoController;
 
 class PassportController extends Controller
 {
@@ -51,6 +52,8 @@ class PassportController extends Controller
      */
     public function login(Request $request)
     {
+
+        $inputForm= $request->only(['form']);
         $input = $request->only(['name', 'password']);
 
         $validate_data = [
@@ -67,15 +70,23 @@ class PassportController extends Controller
                 'errors' => $validator->errors()
             ]);
         }
+        $input['name']=$input['name']. $inputForm['form'];
 
-        // authentication attempt
+        //authentication attempt
         if (auth()->attempt($input)) {
             $token = auth()->user()->createToken('passport_token')->accessToken;
-
-            return response()->json([
+            $first_character = mb_substr($inputForm['form'], 2, 1);
+            $formulario= new FormularioController();
+            $proyecto= new ProyectoController();
+            $respForm=null;
+            if($first_character)
+                $respForm = $formulario->searchFormulario($first_character);
+         return response()->json([
                 'success' => true,
                 'message' => 'Usuario logueado correctamente.',
                 'token' => $token,
+                'formulario'=>$respForm,
+                "proyecto"=>$proyecto->proyecto(),
                 'user' => auth()->user()
             ], 200);
         } else {
